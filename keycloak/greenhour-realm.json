@@ -1,0 +1,133 @@
+{
+  "realm": "greenhour",
+  "enabled": true,
+  "displayName": "GreenHour",
+  "internationalizationEnabled": true,
+  "supportedLocales": [
+    "da",
+    "en"
+  ],
+  "defaultLocale": "da",
+  "registrationAllowed": true,
+  "loginWithEmailAllowed": true,
+  "resetPasswordAllowed": false,
+  "sslRequired": "external",
+  "accessTokenLifespan": 900,
+  "roles": {
+    "realm": [
+      {
+        "name": "user",
+        "description": "Regular household user"
+      },
+      {
+        "name": "admin",
+        "description": "Can trigger market imports"
+      },
+      {
+        "name": "default-roles-greenhour",
+        "description": "Given to everyone who signs up",
+        "composite": true,
+        "composites": {
+          "realm": [
+            "offline_access",
+            "uma_authorization",
+            "user"
+          ]
+        }
+      },
+      {
+        "name": "offline_access"
+      },
+      {
+        "name": "uma_authorization"
+      }
+    ]
+  },
+  "defaultRole": {
+    "name": "default-roles-greenhour"
+  },
+  "clients": [
+    {
+      "clientId": "greenhour-web",
+      "name": "GreenHour web app",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "rootUrl": "http://localhost:4200",
+      "redirectUris": [
+        "http://localhost:4200/*",
+        "http://localhost:8080/swagger-ui/oauth2-redirect.html"
+      ],
+      "webOrigins": [
+        "http://localhost:4200",
+        "http://localhost:8080"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:4200/*"
+      }
+    }
+  ],
+  "users": [
+    {
+      "id": "3f0c2a8e-5d1b-4c7e-9a43-2b6f8e1d7c01",
+      "username": "anna",
+      "email": "anna@greenhour.test",
+      "emailVerified": true,
+      "firstName": "Anna",
+      "lastName": "Holm",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-greenhour"
+      ]
+    },
+    {
+      "id": "8b4e6d2a-1c3f-4a5b-9e7d-6f2a1b3c4d02",
+      "username": "jonas",
+      "email": "jonas@greenhour.test",
+      "emailVerified": true,
+      "firstName": "Jonas",
+      "lastName": "Kjær",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-greenhour"
+      ]
+    },
+    {
+      "id": "c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e03",
+      "username": "admin",
+      "email": "admin@greenhour.test",
+      "emailVerified": true,
+      "firstName": "Site",
+      "lastName": "Admin",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-greenhour",
+        "admin"
+      ]
+    }
+  ]
+}
