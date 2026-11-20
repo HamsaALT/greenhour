@@ -1,0 +1,17 @@
+# Backend
+backend/target/
+*.iml
+.idea/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/coverage/
+
+# Local env and OS files
+.env
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
