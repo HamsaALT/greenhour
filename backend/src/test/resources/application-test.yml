@@ -1,0 +1,4 @@
+greenhour:
+  market:
+    # Integration tests must never call the real API.
+    import-enabled: false
