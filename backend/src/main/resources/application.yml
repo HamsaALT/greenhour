@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: greenhour
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/greenhour}
+    username: ${DB_USER:greenhour}
+    password: ${DB_PASSWORD:greenhour}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    placeholders:
+      powerbiPassword: ${POWERBI_PASSWORD:powerbi}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Tokens are issued to the browser via localhost, but inside Docker the
+          # backend fetches signing keys over the internal network. Setting both
+          # keeps issuer validation while using the reachable key URL.
+          issuer-uri: ${JWT_ISSUER_URI:http://localhost:8081/realms/greenhour}
+          jwk-set-uri: ${JWT_JWK_SET_URI:http://localhost:8081/realms/greenhour/protocol/openid-connect/certs}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+springdoc:
+  swagger-ui:
+    oauth:
+      client-id: greenhour-web
+      use-pkce-with-authorization-code-grant: true
+
+greenhour:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+  market:
+    base-url: https://api.energidataservice.dk
+    import-enabled: ${MARKET_IMPORT_ENABLED:true}
+    import-cron: "0 5 * * * *"
+    backfill-days: 7
