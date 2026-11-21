@@ -1,0 +1,195 @@
+<div class="page-head">
+  <div>
+    <h1>{{ 'history.title' | translate }}</h1>
+    <p>{{ 'history.intro' | translate }}</p>
+  </div>
+  <a class="btn" routerLink="/plan"
+    ><app-icon name="calendar" />{{ 'history.planNew' | translate }}</a
+  >
+</div>
+
+@if (planned()) {
+  <div class="notice success" role="status">
+    <app-icon name="check" /><span>{{ 'history.scheduled' | translate }}</span>
+  </div>
+}
+@if (error()) {
+  <div class="notice error" role="alert">
+    <app-icon name="alert" /><span>{{ errorMessage(error()) }}</span>
+  </div>
+}
+
+@if (summary(); as s) {
+  <ul class="cards" [attr.aria-label]="'history.totals' | translate">
+    <li class="card">
+      <div class="card-label"><app-icon name="check" />{{ 'history.completed' | translate }}</div>
+      <div class="card-value">{{ formatNumber(s.completedRuns, 0) }}</div>
+    </li>
+    <li class="card highlight">
+      <div class="card-label"><app-icon name="trend" />{{ 'history.moneySaved' | translate }}</div>
+      <div class="card-value">{{ formatDkk(s.savedDkk) }}</div>
+      <div class="card-note">{{ 'history.onSpotPrice' | translate }}</div>
+    </li>
+    <li class="card">
+      <div class="card-label"><app-icon name="leaf" />{{ 'history.co2Avoided' | translate }}</div>
+      <div class="card-value">{{ formatCo2(s.savedCo2Grams) }}</div>
+    </li>
+  </ul>
+} @else if (!error()) {
+  <ul class="cards" aria-hidden="true">
+    @for (i of [1, 2, 3]; track i) {
+      <li class="card"><span class="skeleton sk-card"></span></li>
+    }
+  </ul>
+}
+
+<section class="panel" aria-labelledby="upcoming-title">
+  <h2 id="upcoming-title">{{ 'history.upcoming' | translate }}</h2>
+  @if (runs() === null) {
+    <span class="skeleton sk-row"></span>
+  } @else if (upcoming().length === 0) {
+    <div class="empty">
+      <app-icon name="calendar" />
+      <p>{{ 'history.nothingPlanned' | translate }}</p>
+      <a routerLink="/plan">{{ 'history.planNew' | translate }}</a>
+    </div>
+  } @else {
+    <table class="stack-table">
+      <thead>
+        <tr>
+          <th scope="col">{{ 'history.colAppliance' | translate }}</th>
+          <th scope="col">{{ 'history.colStart' | translate }}</th>
+          <th scope="col">{{ 'history.colDone' | translate }}</th>
+          <th scope="col" class="right">{{ 'history.colCost' | translate }}</th>
+          <th scope="col" class="right">{{ 'history.colSaving' | translate }}</th>
+          <th scope="col">
+            <span class="sr-only">{{ 'history.colActions' | translate }}</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of upcoming(); track r.id) {
+          <tr>
+            <td class="primary">{{ r.applianceName }}</td>
+            <td class="num" [attr.data-label]="'history.colStart' | translate">
+              {{ formatDayTime(r.plannedStart) }}
+            </td>
+            <td class="num" [attr.data-label]="'history.colDone' | translate">
+              {{ formatTime(r.plannedEnd) }}
+            </td>
+            <td class="right num" [attr.data-label]="'history.colCost' | translate">
+              {{ formatDkk(r.costDkk) }}
+            </td>
+            <td class="right num" [attr.data-label]="'history.colSaving' | translate">
+              {{ formatDkk(r.savedDkk) }}
+            </td>
+            <td class="actions-cell">
+              @if (confirmCancelId() === r.id) {
+                <span class="confirm">
+                  <span class="confirm-text">{{
+                    'history.confirmCancel' | translate: { name: r.applianceName }
+                  }}</span>
+                  <button
+                    type="button"
+                    class="btn btn-small btn-danger"
+                    (click)="mark(r, 'CANCELLED')"
+                  >
+                    {{ 'history.confirmCancelYes' | translate }}
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-small btn-secondary"
+                    (click)="confirmCancelId.set(null)"
+                  >
+                    {{ 'history.keep' | translate }}
+                  </button>
+                </span>
+              } @else {
+                <button type="button" class="btn-link" (click)="mark(r, 'DONE')">
+                  <app-icon name="check" />{{ 'history.markDone' | translate }}
+                </button>
+                <button type="button" class="btn-link danger" (click)="confirmCancelId.set(r.id)">
+                  <app-icon name="x" />{{ 'history.cancelRun' | translate }}
+                </button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</section>
+
+<section class="panel" aria-labelledby="past-title">
+  <h2 id="past-title">{{ 'history.past' | translate }}</h2>
+  @if (runs() === null) {
+    <span class="skeleton sk-row"></span>
+    <span class="sr-only" role="status">{{ 'history.loading' | translate }}</span>
+  } @else if (past().length === 0) {
+    <div class="empty">
+      <app-icon name="clock" />
+      <p>{{ 'history.noPast' | translate }}</p>
+    </div>
+  } @else {
+    <table class="stack-table">
+      <thead>
+        <tr>
+          <th scope="col">{{ 'history.colAppliance' | translate }}</th>
+          <th scope="col">{{ 'history.colRan' | translate }}</th>
+          <th scope="col">{{ 'history.colGoal' | translate }}</th>
+          <th scope="col" class="right">{{ 'history.colEnergy' | translate }}</th>
+          <th scope="col" class="right">{{ 'history.colCost' | translate }}</th>
+          <th scope="col" class="right">{{ 'history.colSaved' | translate }}</th>
+          <th scope="col" class="right">{{ 'history.colCo2' | translate }}</th>
+          <th scope="col">{{ 'history.colStatus' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of visiblePast(); track r.id) {
+          <tr [class.cancelled]="r.status === 'CANCELLED'">
+            <td class="primary">{{ r.applianceName }}</td>
+            <td class="num" [attr.data-label]="'history.colRan' | translate">
+              {{ formatDayTime(r.plannedStart) }}
+            </td>
+            <td [attr.data-label]="'history.colGoal' | translate">
+              {{ 'goals.' + r.goal | translate }}
+            </td>
+            <td class="right num" [attr.data-label]="'history.colEnergy' | translate">
+              {{ formatNumber(r.energyKwh, 2) }} kWh
+            </td>
+            <td class="right num" [attr.data-label]="'history.colCost' | translate">
+              {{ formatDkk(r.costDkk) }}
+            </td>
+            <td class="right num" [attr.data-label]="'history.colSaved' | translate">
+              {{ formatDkk(r.savedDkk) }}
+            </td>
+            <td class="right num" [attr.data-label]="'history.colCo2' | translate">
+              {{ formatCo2(r.savedCo2Grams) }}
+            </td>
+            <td [attr.data-label]="'history.colStatus' | translate">
+              @if (r.status === 'DONE') {
+                <span class="badge ok"
+                  ><app-icon name="check" />{{ 'history.statusDone' | translate }}</span
+                >
+              } @else {
+                <span class="badge"
+                  ><app-icon name="x" />{{ 'history.statusCancelled' | translate }}</span
+                >
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    @if (past().length > visiblePast().length) {
+      <div class="more">
+        <span class="muted small">{{
+          'history.showing' | translate: { shown: visiblePast().length, total: past().length }
+        }}</span>
+        <button type="button" class="btn btn-secondary" (click)="showMore()">
+          {{ 'history.showMore' | translate }}
+        </button>
+      </div>
+    }
+  }
+</section>

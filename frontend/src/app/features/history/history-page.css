@@ -1,0 +1,30 @@
+.more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.more .btn {
+  min-height: var(--touch);
+}
+
+tr.cancelled td {
+  color: var(--muted);
+}
+
+.sk-card {
+  height: 64px;
+}
+
+.sk-row {
+  height: 120px;
+}
+
+@media (min-width: 861px) {
+  td.primary {
+    font-weight: 600;
+  }
+}

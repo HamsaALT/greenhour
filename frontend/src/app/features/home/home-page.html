@@ -1,0 +1,229 @@
+<div class="page-head">
+  <div>
+    <h1>{{ 'home.title' | translate }}</h1>
+    <p>{{ 'home.intro' | translate }}</p>
+  </div>
+</div>
+
+@if (loadError()) {
+  <div class="notice error" role="alert">
+    <app-icon name="alert" /><span>{{ errorMessage(loadError()) }}</span>
+  </div>
+}
+
+<ul class="cards" [attr.aria-label]="'home.facts' | translate">
+  <li class="card">
+    <div class="card-label"><app-icon name="home" />{{ 'home.priceArea' | translate }}</div>
+    @if (household(); as h) {
+      <div class="card-value">{{ h.priceArea }}</div>
+      <div class="card-note">
+        {{ (h.priceArea === 'DK1' ? 'prices.westHint' : 'prices.eastHint') | translate }}
+      </div>
+    } @else {
+      <span class="skeleton sk-value"></span>
+    }
+  </li>
+  <li class="card">
+    <div class="card-label"><app-icon name="plug" />{{ 'home.appliances' | translate }}</div>
+    <div class="card-value">{{ formatNumber(appliances().length, 0) }}</div>
+    <div class="card-note">{{ 'home.appliancesNote' | translate }}</div>
+  </li>
+  <li class="card highlight">
+    <div class="card-label"><app-icon name="calendar" />{{ 'home.nextStep' | translate }}</div>
+    <a class="next-link" routerLink="/plan">{{ 'home.planLink' | translate }}</a>
+    <div class="card-note">{{ 'home.planNote' | translate }}</div>
+  </li>
+</ul>
+
+<section class="panel" aria-labelledby="household-title">
+  <h2 id="household-title">{{ 'home.household' | translate }}</h2>
+  <form class="household" [formGroup]="householdForm" (ngSubmit)="saveHousehold()">
+    <div class="field grow">
+      <label for="hh-name">{{ 'home.name' | translate }}</label>
+      <input id="hh-name" formControlName="name" maxlength="80" />
+    </div>
+    <div class="field">
+      <label for="hh-area">{{ 'home.priceArea' | translate }}</label>
+      <select id="hh-area" formControlName="priceArea">
+        <option value="DK1">{{ 'home.dk1' | translate }}</option>
+        <option value="DK2">{{ 'home.dk2' | translate }}</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-secondary" [disabled]="householdForm.pristine">
+      {{ 'home.save' | translate }}
+    </button>
+    <span class="saved" role="status">
+      @if (householdSaved()) {
+        <app-icon name="check" />{{ 'home.saved' | translate }}
+      }
+    </span>
+  </form>
+</section>
+
+<section class="panel" aria-labelledby="appliances-title">
+  <div class="section-head">
+    <h2 id="appliances-title">{{ 'home.appliances' | translate }}</h2>
+    @if (editingId() === null) {
+      <button type="button" class="btn btn-small" (click)="startAdd()">
+        <app-icon name="plug" />{{ 'home.addAppliance' | translate }}
+      </button>
+    }
+  </div>
+
+  @if (editingId() !== null) {
+    <form class="appliance-form" [formGroup]="applianceForm" (ngSubmit)="saveAppliance()">
+      <h3>
+        {{ (editingId() === 'new' ? 'home.newAppliance' : 'home.editAppliance') | translate }}
+      </h3>
+      <div class="grid">
+        <div class="field">
+          <label for="ap-kind">{{ 'home.type' | translate }}</label>
+          <select id="ap-kind" formControlName="kind" (change)="kindChanged()">
+            @for (k of kinds; track k) {
+              <option [value]="k">{{ 'kinds.' + k | translate }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label for="ap-name">{{ 'home.name' | translate }}</label>
+          <input
+            id="ap-name"
+            formControlName="name"
+            maxlength="60"
+            [placeholder]="'home.namePlaceholder' | translate"
+          />
+          @if (applianceForm.controls.name.touched && applianceForm.controls.name.invalid) {
+            <span class="error"><app-icon name="alert" />{{ 'home.nameError' | translate }}</span>
+          }
+        </div>
+        <div class="field">
+          <label for="ap-power">{{ 'home.power' | translate }}</label>
+          <input
+            id="ap-power"
+            type="number"
+            formControlName="powerKw"
+            aria-describedby="ap-power-hint"
+            min="0.05"
+            max="22"
+            step="0.05"
+          />
+          @if (applianceForm.controls.powerKw.touched && applianceForm.controls.powerKw.invalid) {
+            <span class="error" id="ap-power-hint"
+              ><app-icon name="alert" />{{ 'home.powerError' | translate }}</span
+            >
+          } @else {
+            <span class="hint" id="ap-power-hint">{{ 'home.powerHint' | translate }}</span>
+          }
+        </div>
+        <div class="field">
+          <label for="ap-minutes">{{ 'home.runTime' | translate }}</label>
+          <input
+            id="ap-minutes"
+            type="number"
+            formControlName="runMinutes"
+            min="15"
+            max="720"
+            step="15"
+            aria-describedby="ap-minutes-hint"
+          />
+          @if (
+            applianceForm.controls.runMinutes.touched && applianceForm.controls.runMinutes.invalid
+          ) {
+            <span class="error" id="ap-minutes-hint"
+              ><app-icon name="alert" />{{ 'home.runTimeError' | translate }}</span
+            >
+          } @else {
+            <span class="hint" id="ap-minutes-hint">{{ 'home.runTimeHint' | translate }}</span>
+          }
+        </div>
+      </div>
+
+      @if (formError()) {
+        <div class="notice error" role="alert">
+          <app-icon name="alert" /><span>{{ errorMessage(formError()) }}</span>
+        </div>
+      }
+
+      <div class="actions">
+        <button type="submit" class="btn">{{ 'home.saveAppliance' | translate }}</button>
+        <button type="button" class="btn btn-secondary" (click)="cancelEdit()">
+          {{ 'home.cancel' | translate }}
+        </button>
+      </div>
+    </form>
+  }
+
+  @if (appliances().length === 0 && editingId() === null) {
+    <div class="empty">
+      <app-icon name="plug" />
+      <p>{{ 'home.empty' | translate }}</p>
+    </div>
+  } @else if (appliances().length > 0) {
+    <table class="stack-table">
+      <thead>
+        <tr>
+          <th scope="col">{{ 'home.colName' | translate }}</th>
+          <th scope="col">{{ 'home.colType' | translate }}</th>
+          <th scope="col" class="right">{{ 'home.colPower' | translate }}</th>
+          <th scope="col" class="right">{{ 'home.colRunTime' | translate }}</th>
+          <th scope="col" class="right">{{ 'home.colEnergy' | translate }}</th>
+          <th>
+            <span class="sr-only">{{ 'home.colActions' | translate }}</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (a of appliances(); track a.id) {
+          <tr>
+            <td class="primary">{{ a.name }}</td>
+            <td class="muted" [attr.data-label]="'home.colType' | translate">
+              {{ 'kinds.' + a.kind | translate }}
+            </td>
+            <td class="right num" [attr.data-label]="'home.colPower' | translate">
+              {{ formatNumber(a.powerKw, 1) }} kW
+            </td>
+            <td class="right num" [attr.data-label]="'home.colRunTime' | translate">
+              {{ formatDuration(a.runMinutes) }}
+            </td>
+            <td class="right num" [attr.data-label]="'home.colEnergy' | translate">
+              {{ formatNumber(a.energyPerRunKwh, 2) }} kWh
+            </td>
+            <td class="right actions-cell">
+              @if (confirmDeleteId() === a.id) {
+                <span class="confirm">
+                  <span class="confirm-text">{{
+                    'home.confirmDelete' | translate: { name: a.name }
+                  }}</span>
+                  <button
+                    type="button"
+                    class="btn btn-small btn-danger"
+                    (click)="deleteAppliance(a.id)"
+                  >
+                    {{ 'home.delete' | translate }}
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-small btn-secondary"
+                    (click)="confirmDeleteId.set(null)"
+                  >
+                    {{ 'home.keep' | translate }}
+                  </button>
+                </span>
+              } @else {
+                <a class="btn-link" [routerLink]="['/plan']" [queryParams]="{ appliance: a.id }">
+                  {{ 'home.plan' | translate }}
+                </a>
+                <button type="button" class="btn-link" (click)="startEdit(a)">
+                  {{ 'home.edit' | translate }}
+                </button>
+                <button type="button" class="btn-link danger" (click)="confirmDeleteId.set(a.id)">
+                  {{ 'home.delete' | translate }}
+                </button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</section>

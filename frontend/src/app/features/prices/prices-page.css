@@ -1,0 +1,78 @@
+.controls {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.sk-label {
+  width: 50%;
+  height: 14px;
+}
+
+.sk-value {
+  width: 70%;
+  height: 26px;
+  margin: 10px 0 8px;
+}
+
+.sk-note {
+  width: 40%;
+  height: 12px;
+}
+
+.sk-title {
+  width: 240px;
+  max-width: 60%;
+  height: 18px;
+  margin-bottom: var(--space-5);
+}
+
+.sk-chart {
+  height: 280px;
+}
+
+.cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+  margin-top: var(--space-4);
+  background: var(--accent-soft);
+  border-color: #a9d3c8;
+}
+
+.cta h2 {
+  margin-bottom: var(--space-1);
+}
+
+.cta p {
+  margin: 0;
+  max-width: 560px;
+}
+
+.next-step {
+  margin-top: var(--space-5);
+  color: var(--muted);
+}
+
+@media (max-width: 600px) {
+  .controls,
+  .controls .segmented {
+    width: 100%;
+  }
+
+  .controls .segmented label {
+    flex: 1;
+    justify-content: center;
+    min-height: var(--touch);
+  }
+}

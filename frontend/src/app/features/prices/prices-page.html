@@ -1,0 +1,165 @@
+<div class="page-head">
+  <div>
+    <h1>{{ 'prices.title' | translate }}</h1>
+    <p>{{ longDate() }}</p>
+  </div>
+
+  <div class="controls">
+    <fieldset class="segmented">
+      <legend class="sr-only">{{ 'prices.day' | translate }}</legend>
+      <label>
+        <input
+          type="radio"
+          name="day"
+          [checked]="dayChoice() === 'today'"
+          (change)="setDay('today')"
+        />
+        {{ 'prices.today' | translate }}
+      </label>
+      <label>
+        <input
+          type="radio"
+          name="day"
+          [checked]="dayChoice() === 'tomorrow'"
+          (change)="setDay('tomorrow')"
+        />
+        {{ 'prices.tomorrow' | translate }}
+      </label>
+    </fieldset>
+
+    <fieldset class="segmented">
+      <legend class="sr-only">{{ 'prices.area' | translate }}</legend>
+      <label [title]="'prices.westHint' | translate">
+        <input type="radio" name="area" [checked]="area() === 'DK1'" (change)="setArea('DK1')" />
+        {{ 'prices.west' | translate }}
+      </label>
+      <label [title]="'prices.eastHint' | translate">
+        <input type="radio" name="area" [checked]="area() === 'DK2'" (change)="setArea('DK2')" />
+        {{ 'prices.east' | translate }}
+      </label>
+    </fieldset>
+  </div>
+</div>
+
+@if (isDemo()) {
+  <div class="notice" role="note">
+    <app-icon name="info" />
+    <span>{{ 'prices.demoNotice' | translate }}</span>
+  </div>
+}
+
+@if (loading()) {
+  <div aria-busy="true">
+    <span class="sr-only" role="status">{{ 'prices.loading' | translate }}</span>
+    <ul class="cards" aria-hidden="true">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <li class="card">
+          <span class="skeleton sk-label"></span>
+          <span class="skeleton sk-value"></span>
+          <span class="skeleton sk-note"></span>
+        </li>
+      }
+    </ul>
+    <div class="panel" aria-hidden="true">
+      <span class="skeleton sk-title"></span>
+      <span class="skeleton sk-chart"></span>
+    </div>
+  </div>
+} @else if (error()) {
+  <section class="panel state-error" aria-labelledby="error-title">
+    <app-icon name="alert" />
+    <h2 id="error-title">{{ 'prices.errorTitle' | translate }}</h2>
+    <p role="alert">{{ error() }}</p>
+    <button type="button" class="btn" (click)="retry()">
+      <app-icon name="refresh" />
+      {{ 'prices.retry' | translate }}
+    </button>
+  </section>
+} @else if (slots().length === 0) {
+  <section class="panel empty">
+    <app-icon name="calendar" />
+    <p>
+      @if (dayChoice() === 'tomorrow') {
+        {{ 'prices.tomorrowNotOut' | translate }}
+      } @else {
+        {{ 'prices.noPrices' | translate }}
+      }
+    </p>
+  </section>
+} @else {
+  <ul class="cards" [attr.aria-label]="'prices.keyFigures' | translate">
+    <li class="card">
+      <div class="card-label"><app-icon name="bolt" />{{ 'prices.rightNow' | translate }}</div>
+      @if (now(); as slot) {
+        <div class="card-value">{{ formatPrice(slot.priceDkkPerKwh) }}</div>
+        <div class="card-note">
+          {{ formatCo2(slot.co2GramsPerKwh) }} {{ 'units.co2PerKwh' | translate }}
+        </div>
+      } @else {
+        <div class="card-value muted">–</div>
+        <div class="card-note">{{ 'prices.notThisDay' | translate }}</div>
+      }
+    </li>
+    <li class="card highlight">
+      <div class="card-label"><app-icon name="clock" />{{ 'prices.cheapestHour' | translate }}</div>
+      @if (cheapestHour(); as w) {
+        <div class="card-value">{{ formatTime(w.start) }}–{{ formatTime(w.end) }}</div>
+        <div class="card-note">
+          {{ 'prices.average' | translate: { price: formatPrice(w.averagePrice) } }}
+        </div>
+      }
+    </li>
+    <li class="card">
+      <div class="card-label"><app-icon name="leaf" />{{ 'prices.cheapest' | translate }}</div>
+      @if (cheapest(); as w) {
+        <div class="card-value">{{ formatTime(w.start) }}–{{ formatTime(w.end) }}</div>
+        <div class="card-note">
+          {{ 'prices.average' | translate: { price: formatPrice(w.averagePrice) } }}
+        </div>
+      }
+    </li>
+    <li class="card">
+      <div class="card-label"><app-icon name="trend" />{{ 'prices.dayAverage' | translate }}</div>
+      @if (average(); as avg) {
+        <div class="card-value">{{ formatPrice(avg) }}</div>
+      }
+      @if (peak(); as p) {
+        <div class="card-note">
+          {{
+            'prices.peakNote'
+              | translate: { time: formatTime(p.start), price: formatPrice(p.priceDkkPerKwh) }
+          }}
+        </div>
+      }
+    </li>
+  </ul>
+
+  <section class="panel" aria-labelledby="chart-title">
+    <div class="panel-head">
+      <h2 id="chart-title">{{ 'prices.chartTitle' | translate }}</h2>
+      @if (hasForecastCo2()) {
+        <span class="muted small">{{ 'prices.forecastNote' | translate }}</span>
+      }
+    </div>
+    <app-price-chart [slots]="slots()" [cheapest]="cheapest()" />
+  </section>
+}
+
+<app-source-list heading="sources.heading" [entries]="sources" footnote="sources.footnote" />
+
+@if (!auth.isLoggedIn()) {
+  <section class="panel cta" aria-labelledby="cta-title">
+    <div>
+      <h2 id="cta-title">{{ 'prices.ctaTitle' | translate }}</h2>
+      <p class="muted">{{ 'prices.ctaText' | translate }}</p>
+    </div>
+    <button type="button" class="btn" (click)="auth.login('/plan')">
+      {{ 'prices.ctaButton' | translate }}
+    </button>
+  </section>
+} @else {
+  <p class="next-step">
+    <a routerLink="/plan">{{ 'prices.nextStepLink' | translate }}</a>
+    {{ 'prices.nextStepText' | translate }}
+  </p>
+}

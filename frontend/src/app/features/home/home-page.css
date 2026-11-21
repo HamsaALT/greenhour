@@ -1,0 +1,68 @@
+.household {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.household .grow {
+  flex: 1;
+  min-width: 220px;
+}
+
+.household .btn {
+  min-height: var(--touch);
+}
+
+.saved {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--accent-ink);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  padding-bottom: 12px;
+}
+
+.next-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch);
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.sk-value {
+  height: 28px;
+  width: 60%;
+  margin-top: var(--space-2);
+}
+
+.appliance-form {
+  background: var(--surface-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin: 0 0 var(--space-4);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.actions .btn {
+  min-height: var(--touch);
+}
+
+.actions-cell a {
+  text-decoration: none;
+}

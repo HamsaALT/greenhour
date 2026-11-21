@@ -1,0 +1,219 @@
+<div class="page-head">
+  <div>
+    <h1>{{ 'plan.title' | translate }}</h1>
+    <p>{{ 'plan.intro' | translate }}</p>
+  </div>
+</div>
+
+@if (appliances(); as list) {
+  @if (list.length === 0) {
+    <section class="panel empty">
+      <app-icon name="plug" />
+      <p>{{ 'plan.noAppliances' | translate }}</p>
+      <a class="btn" routerLink="/home">{{ 'plan.addFirst' | translate }}</a>
+    </section>
+  } @else {
+    <div class="layout">
+      <form
+        class="panel form"
+        [formGroup]="form"
+        (ngSubmit)="schedule()"
+        novalidate
+        aria-labelledby="form-title"
+      >
+        <h2 id="form-title">{{ 'plan.formTitle' | translate }}</h2>
+
+        <div class="field">
+          <label for="appliance">{{ 'plan.appliance' | translate }}</label>
+          <select id="appliance" formControlName="applianceId" aria-describedby="appliance-hint">
+            @for (a of list; track a.id) {
+              <option [ngValue]="a.id">{{ a.name }}</option>
+            }
+          </select>
+          <span class="hint" id="appliance-hint">
+            @if (selectedAppliance(); as a) {
+              {{
+                'plan.applianceHint'
+                  | translate
+                    : {
+                        power: formatNumber(a.powerKw, 1),
+                        duration: formatDuration(a.runMinutes),
+                        energy: formatNumber(a.energyPerRunKwh, 2),
+                      }
+              }}
+            }
+          </span>
+        </div>
+
+        <div class="field">
+          <label for="earliest">{{ 'plan.earliest' | translate }}</label>
+          <input
+            id="earliest"
+            type="datetime-local"
+            formControlName="earliestStart"
+            step="900"
+            required
+            aria-describedby="earliest-msg"
+            [attr.aria-invalid]="earliestMissing() && form.controls.earliestStart.touched"
+          />
+          @if (earliestMissing() && form.controls.earliestStart.touched) {
+            <span class="error" id="earliest-msg">
+              <app-icon name="alert" />{{ 'plan.errors.required' | translate }}
+            </span>
+          } @else {
+            <span class="hint" id="earliest-msg">{{ 'plan.earliestHint' | translate }}</span>
+          }
+        </div>
+
+        <div class="field">
+          <label for="deadline">{{ 'plan.deadline' | translate }}</label>
+          <input
+            id="deadline"
+            type="datetime-local"
+            formControlName="deadline"
+            step="900"
+            required
+            aria-describedby="deadline-msg"
+            [attr.aria-invalid]="
+              (deadlineMissing() && form.controls.deadline.touched) || !!windowError()
+            "
+          />
+          @if (deadlineMissing() && form.controls.deadline.touched) {
+            <span class="error" id="deadline-msg">
+              <app-icon name="alert" />{{ 'plan.errors.required' | translate }}
+            </span>
+          } @else if (windowError(); as e) {
+            <span class="error" id="deadline-msg">
+              <app-icon name="alert" />{{ e.key | translate: e.params }}
+            </span>
+          } @else {
+            <span class="hint" id="deadline-msg">{{ 'plan.deadlineHint' | translate }}</span>
+          }
+        </div>
+
+        <fieldset class="field">
+          <legend>{{ 'plan.optimiseFor' | translate }}</legend>
+          <div class="segmented">
+            @for (g of goals; track g) {
+              <label>
+                <input type="radio" formControlName="goal" [value]="g" />
+                {{ 'goals.' + g | translate }}
+              </label>
+            }
+          </div>
+        </fieldset>
+
+        @if (saveError()) {
+          <div class="notice error" role="alert">
+            <app-icon name="alert" /><span>{{ errorMessage(saveError()) }}</span>
+          </div>
+        }
+
+        <button type="submit" class="btn submit" [disabled]="saving()">
+          <app-icon name="calendar" />
+          {{ (saving() ? 'plan.saving' : 'plan.schedule') | translate }}
+        </button>
+      </form>
+
+      <section
+        class="panel result"
+        aria-labelledby="result-title"
+        aria-live="polite"
+        [attr.aria-busy]="previewLoading()"
+        [class.stale]="previewLoading() && preview()"
+      >
+        <h2 id="result-title" class="sr-only">{{ 'plan.resultTitle' | translate }}</h2>
+        @if (windowError()) {
+          <div class="empty">
+            <app-icon name="clock" />
+            <p>{{ 'plan.fixWindow' | translate }}</p>
+          </div>
+        } @else if (previewError()) {
+          <div class="state-error">
+            <app-icon name="alert" />
+            <p>{{ previewError() }}</p>
+          </div>
+        } @else if (preview(); as p) {
+          <div class="recommendation">
+            <div class="label">{{ 'plan.bestStart' | translate }}</div>
+            <div class="start num">{{ formatDayTime(p.start) }}</div>
+            <div class="muted">{{ 'plan.doneAt' | translate: { time: formatTime(p.end) } }}</div>
+          </div>
+
+          @if (timeline(); as tl) {
+            <div class="timeline" aria-hidden="true">
+              <div class="track">
+                <div class="run" [style.left.%]="tl.left" [style.width.%]="tl.width"></div>
+              </div>
+              <div class="ends num">
+                <span>{{ formatDayTime(tl.from) }}</span>
+                <span>{{ formatDayTime(tl.to) }}</span>
+              </div>
+            </div>
+          }
+
+          <ul class="cards stats">
+            <li class="card">
+              <div class="card-label">{{ 'plan.cost' | translate }}</div>
+              <div class="card-value">{{ formatDkk(p.costDkk) }}</div>
+              <div class="card-note">
+                {{ 'plan.vsNow' | translate: { value: formatDkk(p.baselineCostDkk) } }}
+              </div>
+            </li>
+            <li class="card" [class.highlight]="p.savedDkk > 0.005">
+              <div class="card-label">{{ 'plan.savingLabel' | translate }}</div>
+              <div class="card-value">{{ formatDkk(p.savedDkk) }}</div>
+              <div class="card-note">
+                @if (savingPercent() !== null) {
+                  {{ 'plan.percentOfNow' | translate: { value: savingPercent() } }}
+                }
+              </div>
+            </li>
+            <li class="card">
+              <div class="card-label">{{ 'plan.co2' | translate }}</div>
+              <div class="card-value">{{ formatCo2(p.co2Grams) }}</div>
+              <div class="card-note">
+                {{ 'plan.vsNow' | translate: { value: formatCo2(p.baselineCo2Grams) } }}
+              </div>
+            </li>
+          </ul>
+
+          <p class="saving"><app-icon name="check" />{{ savingSentence() }}</p>
+
+          @if (co2CutOff(); as cutOff) {
+            <p class="notice">
+              <app-icon name="info" />
+              <span>{{ 'plan.co2CutOff' | translate: { time: formatDayTime(cutOff) } }}</span>
+            </p>
+          }
+
+          @if (p.options.length > 1) {
+            <h3 class="chart-title">
+              {{ (chartMetric() === 'co2' ? 'plan.chartCo2' : 'plan.chartCost') | translate }}
+            </h3>
+            <app-options-chart
+              [options]="p.options"
+              [chosenStart]="p.start"
+              [metric]="chartMetric()"
+            />
+          }
+        } @else {
+          <div aria-hidden="true">
+            <span class="skeleton sk-label"></span>
+            <span class="skeleton sk-start"></span>
+            <span class="skeleton sk-track"></span>
+            <span class="skeleton sk-block"></span>
+          </div>
+          <span class="sr-only" role="status">{{ 'plan.working' | translate }}</span>
+        }
+      </section>
+    </div>
+  }
+} @else {
+  <div class="panel" aria-busy="true">
+    <span class="skeleton sk-block"></span>
+    <span class="sr-only" role="status">{{ 'plan.loadingAppliances' | translate }}</span>
+  </div>
+}
+
+<app-source-list heading="sources.planHeading" [entries]="sources" footnote="sources.footnote" />
