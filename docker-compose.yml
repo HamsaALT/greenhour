@@ -1,0 +1,82 @@
+name: greenhour
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: greenhour
+      POSTGRES_USER: greenhour
+      POSTGRES_PASSWORD: greenhour
+    ports:
+      # Host port 5433 so it never clashes with a locally installed PostgreSQL.
+      # Power BI Desktop connects here.
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U greenhour -d greenhour"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4.0
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      # Tokens must carry the issuer the browser sees, even though the backend
+      # talks to Keycloak over the internal network.
+      KC_HOSTNAME: http://localhost:8081
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./keycloak/greenhour-realm.json:/opt/keycloak/data/import/greenhour-realm.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build: ./backend
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/greenhour
+      DB_USER: greenhour
+      DB_PASSWORD: greenhour
+      JWT_ISSUER_URI: http://localhost:8081/realms/greenhour
+      JWT_JWK_SET_URI: http://keycloak:8080/realms/greenhour/protocol/openid-connect/certs
+      CORS_ALLOWED_ORIGINS: http://localhost:4200
+      POWERBI_PASSWORD: ${POWERBI_PASSWORD:-powerbi}
+      MARKET_IMPORT_ENABLED: ${MARKET_IMPORT_ENABLED:-true}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 12
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata:
